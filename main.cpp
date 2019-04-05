@@ -1,18 +1,22 @@
 #include "header.h"
 
+using namespace boost::program_options;
 
 int fd=0, n;
 bool stop;
-string trame, ADSC, EAST, IRMS1, URMS1;
+string trame, ADSC, EAST, IRMS1, URMS1, PRM;
 
-int  main(){
+int  main(int argc, char * argv[]){
+    if(argc){
+
+    }
+
     openport();
-
     thread serialread (readport);
     serialread.detach();
 
     while(1){
-        postgres(ADSC, EAST, IRMS1, URMS1);
+        postgres(ADSC, PRM, EAST, IRMS1, URMS1);
         sleep(1);
         if (stop == true){
             return 0;
@@ -71,14 +75,14 @@ void readport(void){
         else if(buff == CR){
             analyse(trame);
             //cout << trame;
-            printf ("%c", buff);
+            //printf ("%c", buff);
             trame = '\0';
         }
         else if(buff == ETX){
             //printf("\nETX = 0x%x", buff);
         }
         else if(buff == STX){
-            printf("\nSTX = 0x%x", buff);
+            //printf("\nSTX = 0x%x", buff);
         }
         else {
             trame += buff;
@@ -94,10 +98,13 @@ void analyse(string a) {
     getline(iss, donnee,    '\t');
     getline(iss, checksum);
 
-    etiquette.erase (0,1); //     utilise car le string etiquette poseede un char vide a [0]
+    etiquette.erase (0,1); //     utilise car le string etiquette possede un char vide a [0]
 
     if (etiquette == "ADSC"){
         ADSC = donnee;
+    }
+    if (etiquette == "PRM"){
+        PRM = donnee;
     }
     else if(etiquette == "EAST"){
         EAST = donnee;

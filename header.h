@@ -24,6 +24,7 @@
 #include <arpa/inet.h>  //du format local au format réseau htons....
 #include <netdb.h>
 #include <postgresql/libpq-fe.h>
+#include <boost/program_options.hpp>
 
 
 using namespace std;
@@ -33,21 +34,12 @@ using namespace std;
 
 #define STX 0x02
 #define ETX 0x03
-#define HT  0x09
 #define LF  0x0a
 #define CR  0x0d
-#define SP  0x20
-
-#define IP "192.168.2.105"   //IP du serveur à atteindre
-#define PORT 3000
-
-#define _POSIX_SOURCE 1 /* POSIX compliant source */
-#define FALSE 0
-#define TRUE 1
 
 void openport(void);
 void readport(void);
-int postgres(string adco, string east, string irms1, string urms1);
+int postgres(string adsc, string prm, string east, string irms1, string urms1);
 void analyse(string a);
 
 #endif //SERIAL___HEADER_H
