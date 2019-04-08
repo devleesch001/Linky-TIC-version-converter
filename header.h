@@ -37,9 +37,24 @@ using namespace std;
 #define LF  0x0a
 #define CR  0x0d
 
+struct Config {
+    std::string user;
+    std::string password;
+    std::string dbname;
+    std::string adresseIP;
+    std::string port;
+};
+
 void openport(void);
 void readport(void);
 int postgres(string adsc, string prm, string east, string irms1, string urms1);
 void analyse(string a);
+
+void initConfig(Config& config);
+void loadConfig(Config& config);
+void reloadConfig();
+void buildConfig();
+void removeConfig();
+void displayConfig(Config& config);
 
 #endif //SERIAL___HEADER_H
