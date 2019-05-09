@@ -6,13 +6,18 @@ namespace {
     const size_t ERROR_UNHANDLED_EXCEPTION = 2;
 }
 
-int fd=0, n;
+
 bool stop;
-string trame, ADSC, EAST, IRMS1, URMS1, PRM;
+string trame, ADSC, EAST, IRMS1, URMS1, PRM, DATE;
+string dbconnect;
+int fd;
+
 
 int  main(int argc, char** argv)
 {
     Config config;
+    initConfig(config);
+    configure(config);
     try
     {
         /** Define and parse the program options */
@@ -22,7 +27,10 @@ int  main(int argc, char** argv)
                 ("help,h", "Print help messages")
                 ("config,c", "show config")
                 ("config-re,r", "reset config to default")
+                ("database,d", "show and test db-configuration")
+                ("database-build,b", "create table in database")
                 ("version,v", "version");
+
         po::variables_map vm;
         try{
             po::store(po::parse_command_line(argc, argv, desc),
@@ -35,15 +43,27 @@ int  main(int argc, char** argv)
                 return SUCCESS;
             }
             if (vm.count("config")){
-                displayConfig(config);
+                displayConfig();
                 return SUCCESS;
             }
             if (vm.count("config-re")){
                 reloadConfig();
                 return SUCCESS;
             }
+            if (vm.count("database")){
+                initConfig(config);
+                configure(config);
+                dbtestConn();
+                return SUCCESS;
+            }
+            if (vm.count("database-build")){
+                initConfig(config);
+                configure(config);
+                databaseBuild(config);
+                return SUCCESS;
+            }
             if (vm.count("version")){
-                std::cout << "version" << std::endl;
+                std::cout << "version 0.1a" << std::endl;
                 return SUCCESS;
             }
 
@@ -69,7 +89,8 @@ int  main(int argc, char** argv)
     serialread.detach();
 
     while(1){
-        postgres(ADSC, PRM, EAST, IRMS1, URMS1);
+        postgres(config, ADSC, PRM, EAST, IRMS1, URMS1, DATE);
+        //transmition(ADSC, PRM, EAST, IRMS1, URMS1);
         sleep(1);
         if (stop == true){
             return 0;
@@ -77,7 +98,7 @@ int  main(int argc, char** argv)
     }
 }
 
-struct termios enedis;
+struct termios tty;
 
 void openport(void){
     fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY |O_NDELAY );
@@ -86,38 +107,39 @@ void openport(void){
     }
 
     fcntl(fd, F_SETFL, 0);
-    tcgetattr(fd,&enedis); /* save current serial port settings */
-    bzero(&enedis, sizeof(enedis));
+    tcgetattr(fd,&tty); /* save current serial port settings */
+    bzero(&tty, sizeof(tty));
 
-    enedis.c_cflag = BAUDRATE | CRTSCTS | CS7 | CSTOPB;
+//    tty.c_cflag = BAUDRATE | CRTSCTS | CS7 | CSTOPB;
+    tty.c_cflag = BAUDRATE | PARENB | CS7;
 
-    enedis.c_iflag = IGNPAR | ICRNL;
+    tty.c_iflag = IGNPAR | ICRNL;
 
-    enedis.c_oflag = 0;
-    enedis.c_lflag = ICANON;
-    enedis.c_cc[VINTR]    = 0;     /* Ctrl-c */
-    enedis.c_cc[VQUIT]    = 0;     /* Ctrl-\ */
-    enedis.c_cc[VERASE]   = 0;     /* del */
-    enedis.c_cc[VKILL]    = 0;     /* @ */
-    // enedis.c_cc[VEOF]     = 4;     /* Ctrl-d */
-    enedis.c_cc[VTIME]    = 0;     /* inter-character timer unused */
-    enedis.c_cc[VMIN]     = 0;     /* blocking read until 1 character arrives */
-    enedis.c_cc[VSWTC]    = 0;     /* '\0' */
-    enedis.c_cc[VSTART]   = 0;     /* Ctrl-q */
-    enedis.c_cc[VSTOP]    = 0;     /* Ctrl-s */
-    enedis.c_cc[VSUSP]    = 0;     /* Ctrl-z */
-    enedis.c_cc[VEOL]     = 0;     /* '\0' */
-    enedis.c_cc[VREPRINT] = 0;     /* Ctrl-r */
-    enedis.c_cc[VDISCARD] = 0;     /* Ctrl-u */
-    enedis.c_cc[VWERASE]  = 0;     /* Ctrl-w */
-    enedis.c_cc[VLNEXT]   = 0;     /* Ctrl-v */
-    enedis.c_cc[VEOL2]    = 0;     /* '\0' */
+    tty.c_oflag = 0;
+    tty.c_lflag = ICANON;
+    tty.c_cc[VINTR]    = 0;     /* Ctrl-c */
+    tty.c_cc[VQUIT]    = 0;     /* Ctrl-\ */
+    tty.c_cc[VERASE]   = 0;     /* del */
+    tty.c_cc[VKILL]    = 0;     /* @ */
+    // tty.c_cc[VEOF]     = 4;     /* Ctrl-d */
+    tty.c_cc[VTIME]    = 0;     /* inter-character timer unused */
+    tty.c_cc[VMIN]     = 0;     /* blocking read until 1 character arrives */
+    tty.c_cc[VSWTC]    = 0;     /* '\0' */
+    tty.c_cc[VSTART]   = 0;     /* Ctrl-q */
+    tty.c_cc[VSTOP]    = 0;     /* Ctrl-s */
+    tty.c_cc[VSUSP]    = 0;     /* Ctrl-z */
+    tty.c_cc[VEOL]     = 0;     /* '\0' */
+    tty.c_cc[VREPRINT] = 0;     /* Ctrl-r */
+    tty.c_cc[VDISCARD] = 0;     /* Ctrl-u */
+    tty.c_cc[VWERASE]  = 0;     /* Ctrl-w */
+    tty.c_cc[VLNEXT]   = 0;     /* Ctrl-v */
+    tty.c_cc[VEOL2]    = 0;     /* '\0' */
 }
 
 void readport(void){
     unsigned char buff;
     while (1) {
-        n = read(fd, &buff, 1);
+        int n = read(fd, &buff, 1);
         if (n == 0) break;
 
 
@@ -167,6 +189,9 @@ void analyse(string a) {
     }
     else if(etiquette == "URMS1"){
         URMS1 = donnee;
+    }
+    else if(etiquette == "DATE"){
+        DATE = donnee;
     }
 }
 

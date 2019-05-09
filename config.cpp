@@ -4,6 +4,8 @@
 
 #include <fstream>
 #include "header.h"
+
+extern string dbconnect;
 //#include "Config.h"
 
 using namespace std;
@@ -14,15 +16,17 @@ void loadConfig(Config& config) {
     while (getline(fin, line)) {
         istringstream sin(line.substr(line.find("=") + 1));
         if (line.find("user") != -1)
-            sin >> config.user;
+            sin >> config.db.user;
         else if (line.find("password") != -1)
-            sin >> config.password;
+            sin >> config.db.password;
         else if (line.find("dbname") != -1)
-            sin >> config.dbname;
+            sin >> config.db.dbname;
+        else if (line.find("table") != -1)
+            sin >> config.db.table;
         else if (line.find("adresseIP") != -1)
-            sin >> config.adresseIP;
+            sin >> config.db.adresseIP;
         else if (line.find("port") != -1)
-            sin >> config.port;
+            sin >> config.db.port;
     }
 }
 
@@ -32,6 +36,7 @@ void buildConfig() {
             << "user = postgres" << std::endl
             << "password = toor" << std::endl
             << "dbname = alexis" << std::endl
+            << "table = linky" << std::endl
             << "adresseIP = 127.0.0.1" << std::endl
             << "port = 8080" << std::endl;
     outfile.close();
@@ -49,14 +54,16 @@ void initConfig(Config& config){
 }
 
 void reloadConfig(){
+    removeConfig();
     buildConfig();
+//    configure();
 }
 
 void removeConfig(){
     remove("config.ini");
 }
 
-void displayConfig(Config& config){
+void displayConfig(){
     ifstream fichier("config.ini", ios::in);  // on ouvre en lecture
     if(fichier)  // si l'ouverture a fonctionné
     {
@@ -67,7 +74,8 @@ void displayConfig(Config& config){
         fichier.close();
     }
     else
-        cerr << "Fichier Config  !" << endl;
+        //cerr << "Fichier Config inexistant ou inacesible (--config-re) pour régénérer la configuration !" << endl;
+        cerr << "Config file doesn't exist or is not accessible... (--config-re) to reload configuration !" << endl;
 
 //    initConfig(config);
 //    cout << config.user << '\n';
@@ -75,4 +83,16 @@ void displayConfig(Config& config){
 //    cout << config.dbname << '\n';
 //    cout << config.adresseIP << '\n';
 //    cout << config.port << '\n';
+}
+
+void configure(Config& config){
+
+    ostringstream oss;
+    oss << "user="  << config.db.user
+    << " password=" << config.db.password
+    << " dbname="   << config.db.dbname
+    << " hostaddr=" << config.db.adresseIP
+    << " port="     << config.db.port;
+
+     dbconnect = oss.str();
 }

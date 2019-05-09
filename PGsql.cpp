@@ -2,15 +2,11 @@
 // Created by dev on 02/04/19.
 //
 #include "header.h"
+extern string dbconnect;
 
-string old_id, old_adsc, old_prm;
-int old_east, old_irms1, old_urms1;
+string old_id, old_adsc, old_prm, old_east, old_irms1, old_urms1, old_date;
+int old_i_east, old_i_irms1, old_i_urms1;
 
-void CloseConn(PGconn *conn);
-void InsertDB(PGconn *conn, string adsc, string east, string irms1, string urms1);
-void FetchDBrec(PGconn *conn);
-void RemoveRecDB(PGconn *conn);
-int postgres(string adsc, string east, string irms1, string urms1);
 
 void CloseConn(PGconn *conn){
     PQfinish(conn);
@@ -20,28 +16,67 @@ void CloseConn(PGconn *conn){
 PGconn *ConnectDB(){
     PGconn *conn = NULL;
 
+    //string dbConf = "user=postgres password=toor dbname=alexis hostaddr=0.0.0.0 port=000";
+    const char *SQLcon_char = dbconnect.c_str();
+
     // Make a connection to the database
-    conn = PQconnectdb("user=postgres password=toor dbname=alexis hostaddr=51.83.78.102 port=5432");
+    conn = PQconnectdb(SQLcon_char);
 
     // Check to see that the backend connection was successfully made
-    if (PQstatus(conn) != CONNECTION_OK)
-    {
-        cout << "Connection to database failed.\n";
+    if (PQstatus(conn) != CONNECTION_OK){
+        clog << "Connection to database failed.\n";
         CloseConn(conn);
-    }
 
-    cout << "Connection to database - OK\n";
+    }
+    else{
+        clog << "Connection to database - OK\n";
+        clog << "disconnect" << endl;
+        //CloseConn(conn);
+    }
 
     return conn;
 }
 
+void CreateTable(PGconn *conn, string table)
+{
+    // Execute with sql statement
+
+    ostringstream oss;
+    oss << "CREATE TABLE "
+        << table
+        << " (id serial not null constraint "
+        << table << "_pk "
+        << "primary key, adsc varchar(12) not null, prm varchar(14), east integer, irms1 integer, urms1 integer, date varchar(13));";
+
+    cout << oss.str().c_str() << endl;
+
+    PGresult *res2 = PQexec(conn, oss.str().c_str());
+
+    if (PQresultStatus(res2) != PGRES_COMMAND_OK)
+    {
+        cout << "Create table failed\n";
+        PQclear(res2);
+        CloseConn(conn);
+    } else{
+        cout << "Create table - OK\n";
+        // Clear result
+        PQclear(res2);
+    }
+
+}
+
 /* Append SQL statement and insert record into employee table */
-void InsertDB(PGconn *conn, string adsc, string prm, string east, string irms1, string urms1) {
-    cout << "This donnes is transmit" << adsc << " - " << prm << " - " << east << " - " << irms1 << " - " << urms1 << endl << endl;
+void InsertDB(PGconn *conn, string table, string adsc, string prm, string east, string irms1, string urms1, string date) {
+
+    clog << "Data transmitted : " << endl
+    //<< old_adsc << " - " << old_prm << " - " << old_east << " - " << old_irms1 << " - " << old_urms1 << endl
+    << adsc << " - " << prm << " - " << east << " - " << irms1 << " - " << urms1 << endl << endl;
 
     // Append the SQL statment
     std::string sSQL;
-    sSQL.append("INSERT INTO proto (adsc, prm, east, irms1, urms1) VALUES ('");
+    sSQL.append("INSERT INTO ");
+    sSQL.append(table);
+    sSQL.append("(adsc, prm, east, irms1, urms1, date) VALUES ('");
     sSQL.append(adsc);
     sSQL.append("', '");
     sSQL.append(prm);
@@ -51,106 +86,84 @@ void InsertDB(PGconn *conn, string adsc, string prm, string east, string irms1, 
     sSQL.append(irms1);
     sSQL.append("', '");
     sSQL.append(urms1);
+    sSQL.append("', '");
+    sSQL.append(date);
     sSQL.append("')");
 
     // Execute with sql statement
     PGresult *res = PQexec(conn, sSQL.c_str());
 
     if (PQresultStatus(res) != PGRES_COMMAND_OK){
-        cout << "Insert data record failed\n";
-        cout << PQresultStatus(res);
-        //PQclear(res);
-        CloseConn(conn);
-    }
-
-    cout << "Insert data record - OK\n";
-
-    // Clear result
-    PQclear(res);
-}
-
-/* Fetch employee record and display it on screen */
-/*
-void FetchDBrec(PGconn *conn){
-    std::string dSQL;
-    dSQL.append("SELECT * FROM proto ORDER BY id DESC LIMIT 1");
-    PGresult *disp = PQexec(conn, dSQL.c_str());
-    //printf ("%s\n", PQgetvalue(disp, 0, 1));
-    oadsc = PQgetvalue(disp, 0, 1);
-    oeast = PQgetvalue(disp, 0, 2);
-    oirms1 = PQgetvalue(disp, 0, 3);
-    ourms1 = PQgetvalue(disp, 0, 4);
-
-    cout << oadsc << " - " << oeast << " - " << oirms1 << " - " << ourms1 << endl;
-    // Close the emprec
-    // Clear result
-    PQclear(disp);
-}
-*/
-/* Erase all record in employee table */
-void RemoveRecDB(PGconn *conn){
-    // Execute with sql statement
-    PGresult *res = PQexec(conn, "DELETE FROM employee");
-
-    if (PQresultStatus(res) != PGRES_COMMAND_OK){
-        cout << "Delete employees record failed.\n";
+        clog << "Data record insertion failed.\n";
+        clog << " error "<< PQresultStatus(res);
         PQclear(res);
         CloseConn(conn);
     }
 
-    cout << "\nDelete employees record - OK\n";
+    clog << "Insert data record - OK\n";
 
     // Clear result
     PQclear(res);
 }
-
-int postgres(string adsc, string prm, string east, string irms1, string urms1){
+int postgres(Config& config, string adsc, string prm, string east, string irms1, string urms1, string date) {
     PGconn *conn = NULL;
-
+    conn = ConnectDB();
 
         //CreateEmployeeTable(conn);
 
+        if (adsc != "" && prm != "" && east != "" && irms1 != "" && urms1 != "" && date !=""){
 
-        if (adsc != "" && prm != "" && east != "" && irms1 != "" && urms1 != ""){
             string::size_type sz;
             int i_east = stoi (east, &sz);
             int i_irms1 = stoi (irms1, &sz);
             int i_urms1 = stoi (urms1, &sz);
-            int var_east = i_east - old_east;
-            int var_urms1 = i_urms1 - old_urms1;
+            int var_east = i_east - old_i_east;
+            int var_urms1 = i_urms1 - old_i_urms1;
 
-            cout << "if ("<< adsc << " != " << old_adsc << " || " <<  prm << " != " << old_prm << " || (" << var_east << " <= 10 || " << var_east << ">= -10) || " << i_irms1 << " != " << old_irms1 << " || (" << var_urms1 << " >= " << 5 << " || " << var_urms1 << "<= -5))" << endl;
+            clog << "if ("<< adsc << " != " << old_adsc << " || " <<  prm << " != " << old_prm << " || (" << var_east << " <= 10 || " << var_east << ">= -10) || " << i_irms1 << " != " << old_irms1 << " || (" << var_urms1 << " >= " << 5 << " || " << var_urms1 << "<= -5) || ("<< date << " != " << old_date << ")"<< endl;
 
-            if (adsc != old_adsc || prm != old_prm ||  (var_east >= 10 || var_east <= -10) || i_irms1 != old_irms1 || (var_urms1 >= 5 || var_urms1 <= -5)){
-                cout << "une valeur est inegale" << endl << endl;
-                conn = ConnectDB();
+            if (adsc != old_adsc || prm != old_prm ||  (var_east >= 10 || var_east <= -10) || i_irms1 != old_i_irms1 || (var_urms1 >= 5 || var_urms1 <= -5) || (date != date)){
+                clog << "Data changed... Data will be updated. " << endl << endl;
 
-                if (conn != NULL)
-                {
-                    InsertDB(conn, adsc, prm, east, irms1, urms1);
+                if (conn != NULL){
+
+                    if (old_adsc != "" && old_prm != "" && old_east != "" && old_irms1 != "" && old_urms1 != "" && old_date != "") {
+                        InsertDB(conn, config.db.table, old_adsc, old_prm, old_east, old_irms1, old_urms1, old_date);
+                    }
+                    InsertDB(conn, config.db.table, adsc, prm, east, irms1, urms1, date);
 
                     old_adsc  = adsc;
                     old_prm   = prm;
-                    old_east  = i_east;
-                    old_irms1 = i_irms1;
-                    old_urms1 = i_urms1;
+                    old_east  = east;
+                    old_i_east  = i_east;
+                    old_irms1 = irms1;
+                    old_i_irms1 = i_irms1;
+                    old_urms1 = urms1;
+                    old_i_urms1 = i_urms1;
 
                 }
-
-                CloseConn(conn);
             }
             else{
-                cout << "Donne toute egale" << endl << endl;
+                clog << "No data changes... Data will not be updated." << endl << endl;
+                //CloseConn(conn);
             }
-
         //FetchDBrec(conn);
         //RemoveAllEmployeeRec(conn);
         //DropEmployeeTable(conn);
-
+        CloseConn(conn);
     }
-
-
     return 0;
 }
 
+void dbtestConn(){
+    PGconn *conn = NULL;
+    conn = ConnectDB();
 
+}
+
+void databaseBuild(Config& config){
+    PGconn *conn = NULL;
+    conn = ConnectDB();
+
+    CreateTable(conn, config.db.table);
+}

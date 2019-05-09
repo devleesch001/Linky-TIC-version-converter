@@ -37,24 +37,52 @@ using namespace std;
 #define LF  0x0a
 #define CR  0x0d
 
-struct Config {
+struct DB {
     std::string user;
     std::string password;
     std::string dbname;
+    std::string table;
     std::string adresseIP;
     std::string port;
 };
 
-void openport(void);
-void readport(void);
-int postgres(string adsc, string prm, string east, string irms1, string urms1);
-void analyse(string a);
+struct SOCKConf {
+    std::string IP;
+    int PORT;
+};
 
+struct Config {
+    struct DB db;
+    struct SOCKConf sockconf;
+};
+
+
+
+// main.cpp
 void initConfig(Config& config);
 void loadConfig(Config& config);
 void reloadConfig();
 void buildConfig();
 void removeConfig();
-void displayConfig(Config& config);
+void displayConfig();
+void configure(Config& config);
+
+void openport(void);
+void readport(void);
+
+void analyse(string a);
+
+// PGsql.cpp
+void CloseConn(PGconn *conn);
+void CreateTable(PGconn *conn);
+void InsertDB(PGconn *conn, string table, string adsc, string east, string irms1, string urms1);
+void FetchDBrec(PGconn *conn);
+void RemoveRecDB(PGconn *conn);
+int postgres(Config& config, string adsc, string prm, string east, string irms1, string urms1, string date);
+void dbtestConn();
+void databaseBuild(Config& config);
+
+
+
 
 #endif //SERIAL___HEADER_H
