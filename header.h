@@ -9,6 +9,7 @@
 #include <string>
 #include <string.h>
 #include <sstream>
+#include <fstream>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <termios.h>
@@ -17,20 +18,23 @@
 #include <unistd.h>
 #include <thread>
 
+
 #include <stdio.h>
 #include <sys/types.h>  //création des sockets
 #include <sys/socket.h> //création des sockets
 #include <netinet/in.h> //contient les fonctions permettant de passer
 #include <arpa/inet.h>  //du format local au format réseau htons....
-#include <netdb.h>
+
 #include <postgresql/libpq-fe.h>
 #include <boost/program_options.hpp>
 
 
 using namespace std;
 
-#define BAUDRATE B9600
-#define MODEMDEVICE "/dev/ttyUSB0"/*UART NAME IN PROCESSOR*/
+#define BAUDRATE_IN  B9600
+#define BAUDRATE_OUT B1200
+#define MODEMDEVICE_IN  "/dev/ttyUSB0"   /*UART NAME IN PROCESSOR*/
+#define MODEMDEVICE_OUT "/dev/ttyUSB1"  /*UART NAME IN PROCESSOR*/
 
 #define STX 0x02
 #define ETX 0x03
@@ -67,8 +71,10 @@ void removeConfig();
 void displayConfig();
 void configure(Config& config);
 
-void openport(void);
+void openportIN(void);
+void openportOUT(void);
 void readport(void);
+void sendport(void);
 
 void analyse(string a);
 

@@ -2,7 +2,7 @@
 // Created by dev on 08/04/19.
 //
 
-#include <fstream>
+
 #include "header.h"
 
 extern string dbconnect;
@@ -47,10 +47,8 @@ void initConfig(Config& config){
     fileStream.open("config.ini");
     if (fileStream.fail()) {
         buildConfig();
-        loadConfig(config);
-    } else{
-        loadConfig(config);
     }
+    loadConfig(config);
 }
 
 void reloadConfig(){
