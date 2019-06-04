@@ -184,9 +184,9 @@ void analyse(string a) {
     } else if (etiquette == "DATE") {
         DATE = donnee;
     } else if (etiquette == "") {
-
     }
 }
+
 //
 //void sendport(void) {
 ////    if ((ADSC != "") && (IRMS1 != "")) {
