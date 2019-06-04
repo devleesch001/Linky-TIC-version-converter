@@ -11,12 +11,12 @@ extern string dbconnect;
 using namespace std;
 
 void loadConfig(Config& config) {
-    ifstream fin("config.ini");
+    ifstream fin("config.ini"); //flux d'entrée sur le fichier config.ini
     string line;
-    while (getline(fin, line)) {
-        istringstream sin(line.substr(line.find("=") + 1));
+    while (getline(fin, line)) { //boucle pour obtenir la ligne, avec le flux dans la varible line  
+        istringstream sin(line.substr(line.find("=") + 1)); // permet de recupere la chaine de caractere apres le caractere = dans le chier config.ini
         if (line.find("user") != -1)
-            sin >> config.db.user;
+            sin >> config.db.user;          // transfer la variable recupere precedement dans la structure config.db
         else if (line.find("password") != -1)
             sin >> config.db.password;
         else if (line.find("dbname") != -1)
@@ -31,34 +31,34 @@ void loadConfig(Config& config) {
 }
 
 void buildConfig() {
-    std::ofstream outfile ("config.ini");
-    outfile << "### ConfigDB ###" << std::endl
-            << "user = postgres" << std::endl
+    std::ofstream outfile ("config.ini");           // crée un fichier config.ini
+    outfile << "### ConfigDB ###" << std::endl      // cree la config text par default 
+            << "user = utilisateur" << std::endl
             << "password = toor" << std::endl
-            << "dbname = alexis" << std::endl
-            << "table = linky" << std::endl
-            << "adresseIP = 127.0.0.1" << std::endl
-            << "port = 8080" << std::endl;
+            << "dbname = nom_de_la_db" << std::endl
+            << "table = nom_de_la_table" << std::endl
+            << "adresseIP = addrese_IP_du_serveur " << std::endl
+            << "port = 80" << std::endl;
     outfile.close();
 }
 
-void initConfig(Config& config){
-    fstream fileStream;
-    fileStream.open("config.ini");
-    if (fileStream.fail()) {
-        buildConfig();
+void initConfig(Config& config){ 
+    fstream fileStream;             //
+    fileStream.open("config.ini");  // charge le fichier config.ini
+    if (fileStream.fail()) {        // si le fichier n'est pas charger
+        buildConfig();              // alors on appelle la fonction buildConfig
     }
-    loadConfig(config);
+    loadConfig(config);             // appale la fonction loadconfig
 }
 
 void reloadConfig(){
-    removeConfig();
-    buildConfig();
+    removeConfig();     //appelle les fonctions
+    buildConfig();      // reconstuit le fichier 
 //    configure();
 }
 
 void removeConfig(){
-    remove("config.ini");
+    remove("config.ini"); //suprime le fichier
 }
 
 void displayConfig(){
@@ -83,7 +83,7 @@ void displayConfig(){
 //    cout << config.port << '\n';
 }
 
-void configure(Config& config){
+void configure(Config& config){     // construit  la chaine en fonction des variable 
 
     ostringstream oss;
     oss << "user="  << config.db.user
