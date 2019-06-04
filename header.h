@@ -28,13 +28,10 @@
 #include <postgresql/libpq-fe.h>
 #include <boost/program_options.hpp>
 
-
 using namespace std;
 
-#define BAUDRATE_IN  B9600
-#define BAUDRATE_OUT B1200
-#define MODEMDEVICE_IN  "/dev/ttyUSB0"   /*UART NAME IN PROCESSOR*/
-#define MODEMDEVICE_OUT "/dev/ttyUSB1"  /*UART NAME IN PROCESSOR*/
+#define BAUDRATE B9600
+#define MODEMDEVICE "/dev/ttyUSB0"   /*UART NAME IN PROCESSOR*/
 
 #define STX 0x02
 #define ETX 0x03
@@ -71,10 +68,8 @@ void removeConfig();
 void displayConfig();
 void configure(Config& config);
 
-void openportIN(void);
-void openportOUT(void);
+void openport(void);
 void readport(void);
-void sendport(void);
 
 void analyse(string a);
 

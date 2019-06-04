@@ -87,15 +87,12 @@ int main(int argc, char **argv) {
 
     }
 
-    openportIN();
+    openport();
     thread serialread(readport);
     serialread.detach();
 
-    openportOUT();
-    thread serialwrite(sendport);
-    serialwrite.detach();
-
     while (1) {
+
         postgres(config, ADSC, PRM, EAST, IRMS1, URMS1, DATE);
         sleep(1);
         if (stop == true) {
@@ -106,10 +103,10 @@ int main(int argc, char **argv) {
 
 struct termios tty;
 
-void openportIN(void) {
-    fd = open(MODEMDEVICE_IN, O_RDWR | O_NOCTTY | O_NDELAY);
+void openport(void) {
+    fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd < 0) {
-        perror(MODEMDEVICE_IN);
+        perror(MODEMDEVICE);
     }
 
     fcntl(fd, F_SETFL, 0);
@@ -117,7 +114,7 @@ void openportIN(void) {
     bzero(&tty, sizeof(tty));
 
 //    tty.c_cflag = BAUDRATE | CRTSCTS | CS7 | CSTOPB;
-    tty.c_cflag = BAUDRATE_IN | PARENB | CS7;
+    tty.c_cflag = BAUDRATE | PARENB | CS7;
     tty.c_iflag = IGNPAR | ICRNL;
 
     tty.c_oflag = 0;
@@ -139,54 +136,6 @@ void openportIN(void) {
     tty.c_cc[VWERASE] = 0;     /* Ctrl-w */
     tty.c_cc[VLNEXT] = 0;     /* Ctrl-v */
     tty.c_cc[VEOL2] = 0;     /* '\0' */
-}
-
-struct termios oldtp, newtp;
-
-void openportOUT(void)
-{
-    fl = open(MODEMDEVICE_OUT, O_RDWR | O_NOCTTY |O_NDELAY );
-    printf("Oviya %d\n",fl);
-    if (fl < 0)
-    {
-        perror(MODEMDEVICE_OUT);         }
-
-    fcntl(fl,F_SETFL,0);
-    tcgetattr(fl,&oldtp); /* save current serial port settings */
-    // tcgetattr(fd,&newtp); /* save current serial port settings */
-    bzero(&newtp, sizeof(newtp));
-    // bzero(&oldtp, sizeof(oldtp));
-
-    newtp.c_cflag = BAUDRATE_OUT | CRTSCTS | CS8 | CLOCAL | CREAD;
-
-    newtp.c_iflag = IGNPAR | ICRNL;
-
-    newtp.c_oflag = 0;
-
-    newtp.c_lflag = ICANON;
-
-    newtp.c_cc[VINTR]    = 0;     /* Ctrl-c */
-    newtp.c_cc[VQUIT]    = 0;     /* Ctrl-\ */
-    newtp.c_cc[VERASE]   = 0;     /* del */
-    newtp.c_cc[VKILL]    = 0;     /* @ */
-    //newtp.c_cc[VEOF]     = 4;     /* Ctrl-d */
-    newtp.c_cc[VEOF]     = 0;     /* Ctrl-d */
-    newtp.c_cc[VTIME]    = 0;     /* inter-character timer unused */
-    newtp.c_cc[VMIN]     = 1;     /* blocking read until 1 character arrives */
-    newtp.c_cc[VSWTC]    = 0;     /* '\0' */
-    newtp.c_cc[VSTART]   = 0;     /* Ctrl-q */
-    newtp.c_cc[VSTOP]    = 0;     /* Ctrl-s */
-    newtp.c_cc[VSUSP]    = 0;     /* Ctrl-z */
-    newtp.c_cc[VEOL]     = 0;     /* '\0' */
-    newtp.c_cc[VREPRINT] = 0;     /* Ctrl-r */
-    newtp.c_cc[VDISCARD] = 0;     /* Ctrl-u */
-    newtp.c_cc[VWERASE]  = 0;     /* Ctrl-w */
-    newtp.c_cc[VLNEXT]   = 0;     /* Ctrl-v */
-    newtp.c_cc[VEOL2]    = 0;     /* '\0' */
-
-
-    //     tcflush(fd, TCIFLUSH);
-//	tcsetattr(fd,TCSANOW,&newtp);
 }
 
 void readport(void) {
@@ -238,69 +187,42 @@ void analyse(string a) {
 
     }
 }
-
-void sendport(void) {
-//    if ((ADSC != "") && (IRMS1 != "")) {
-        ostringstream trame;
-        trame << STX
-              << LF << "ADC0" << ' ' << ADSC << 'A' << CR
-              << LF
-              << LF << "OPTARIF" << ' ' << "BASE" << 'B' << CR
-              << LF
-              << LF << "ISOUSC" << ' ' << "45" << 'C' << CR
-              << LF
-              << LF << "BASE" << ' ' << "000004768" << 'D' << CR
-              << LF
-              << LF << "PTEC" << ' ' << "TH.." << "E" << CR
-              << LF
-              << LF << "IINST" << ' ' << IRMS1 << 'F' << CR
-              << LF
-              << LF << "IMAX" << ' ' << "090" << 'G' << CR
-              << LF
-              << LF << "PAPP" << ' ' << "00000" << 'H' << CR
-              << LF
-              << LF << "HHPHC" << ' ' << "A" << 'I' << CR
-              << LF
-              << LF << "MOTDETAT" << ' ' << "000000" << 'G' << CR;
-        string buffer = trame.str();
-
-//    const char *cstr = buffer.c_str();
-
-        int b = buffer.length();
-        char char_test[b + 1];
-        strcpy(char_test, buffer.c_str());
-
-        int n = write(fl, char_test, b);
-
-        std::cout << n << std::endl;
-        std::cout << std::endl <<
-                  "----------------------------" <<
-                  std::endl;
-
-
-        if (n < 0) {
-            fputs("write() of bytes failed!\n", stderr);
-        } else {
-            printf("Image sent successfully %d\n", n);
-        }
-//        close(fl);
-
-    }
-
-
-void historique() {
-
-//    ostringstream oss;
-//    oss << "ADC0" << " " << donnee << " " << checksum;
-//    historique = oss.str();
-//    cout << historique;
-//    printf("\n");
-//    //socket(historique);
 //
-//    if (etiquette == "IRMS1"){
-//        //socket(donnee);
-//        printf("\n");
+//void sendport(void) {
+////    if ((ADSC != "") && (IRMS1 != "")) {
+//        ostringstream trame;
+//        trame << STX
+//              << LF << "ADC0" << ' ' << ADSC << 'A' << CR
+//              << LF << "OPTARIF" << ' ' << "BASE" << 'B' << CR
+//              << LF << "ISOUSC" << ' ' << "45" << 'C' << CR
+//              << LF << "BASE" << ' ' << "000004768" << 'D' << CR
+//              << LF << "PTEC" << ' ' << "TH.." << "E" << CR
+//              << LF << "IINST" << ' ' << IRMS1 << 'F' << CR
+//              << LF << "IMAX" << ' ' << "090" << 'G' << CR
+//              << LF << "PAPP" << ' ' << "00000" << 'H' << CR
+//              << LF << "HHPHC" << ' ' << "A" << 'I' << CR
+//              << LF << "MOTDETAT" << ' ' << "000000" << 'G' << CR;
+//        string buffer = trame.str();
+//
+////    const char *cstr = buffer.c_str();
+//
+//        int b = buffer.length();
+//        char char_test[b + 1];
+//        strcpy(char_test, buffer.c_str());
+//
+//        int n = write(fl, char_test, b);
+//
+//        std::cout << n << std::endl;
+//        std::cout << std::endl <<
+//                  "----------------------------" <<
+//                  std::endl;
+//
+//
+//        if (n < 0) {
+//            fputs("write() of bytes failed!\n", stderr);
+//        } else {
+//            printf("Image sent successfully %d\n", n);
+//        }
+////        close(fl);
 //
 //    }
-
-}
