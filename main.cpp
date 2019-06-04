@@ -1,6 +1,7 @@
 #include "header.h"
 
-namespace {
+// constante pour boost
+namespace { 
     const size_t ERROR_IN_COMMAND_LINE = 1;
     const size_t SUCCESS = 0;
     const size_t ERROR_UNHANDLED_EXCEPTION = 2;
@@ -13,10 +14,10 @@ string dbconnect;
 int fd, fl;
 
 
-int main(int argc, char **argv) {
-    Config config;
-    initConfig(config);
-    configure(config);
+int main(int argc, char **argv) { //argc et **argv sont les variables arguments 
+    Config config;          // Fait appelle a la structure declare dans le header.h
+    initConfig(config);     // Fait appelle a la Fonction initConfig et envoye la structur de variable config
+    configure(config);      // 
     try {
         /** Define and parse the program options */
         namespace po = boost::program_options;
